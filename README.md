@@ -54,8 +54,8 @@ Acesse: http://localhost:3000
 
 ## Credenciais do Admin (seed)
 
-- **Email**: admin@concursosdigital.com.br
-- **Senha**: admin123
+- **Email**: definido em `ADMIN_EMAIL`
+- **Senha**: definido em `ADMIN_PASSWORD`
 
 Acesse o painel em: http://localhost:3000/admin/login
 

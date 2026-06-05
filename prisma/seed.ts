@@ -9,14 +9,27 @@ const prisma = new PrismaClient({ adapter })
 async function main() {
   console.log("Iniciando seed...")
 
-  // Admin user
-  const adminPassword = await hash("admin123", 12)
+  // Admin user — credenciais via variáveis de ambiente
+  const adminEmail = process.env.ADMIN_EMAIL
+  const adminPass = process.env.ADMIN_PASSWORD
+
+  if (!adminEmail || !adminPass) {
+    console.error("ERRO: Defina ADMIN_EMAIL e ADMIN_PASSWORD nas variáveis de ambiente.")
+    process.exit(1)
+  }
+
+  if (adminPass.length < 12) {
+    console.error("ERRO: ADMIN_PASSWORD deve ter no mínimo 12 caracteres.")
+    process.exit(1)
+  }
+
+  const adminPassword = await hash(adminPass, 12)
   const admin = await prisma.user.upsert({
-    where: { email: "admin@passeiconcurso.com.br" },
-    update: {},
+    where: { email: adminEmail },
+    update: { passwordHash: adminPassword },
     create: {
       name: "Administrador",
-      email: "admin@passeiconcurso.com.br",
+      email: adminEmail,
       passwordHash: adminPassword,
       role: "SUPER_ADMIN",
     },
