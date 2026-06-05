@@ -1,0 +1,346 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== AUTH ====================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          UserRole  @default(ADMIN)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  auditLogs     AuditLog[]
+  notifications Notification[]
+}
+
+enum UserRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+// ==================== APOSTILAS ====================
+
+model Apostila {
+  id                String          @id @default(cuid())
+  titulo            String
+  slug              String          @unique
+  descricaoCurta    String          @db.Text
+  descricaoLonga    String          @db.Text
+  orgaoId           String?
+  orgao             Orgao?          @relation(fields: [orgaoId], references: [id])
+  cargo             String?
+  bancaId           String?
+  banca             Banca?          @relation(fields: [bancaId], references: [id])
+  estado            String?
+  cidade            String?
+  nivel             NivelEscolaridade?
+  area              String?
+  categoriaId       String?
+  categoria         Categoria?      @relation(fields: [categoriaId], references: [id])
+  statusConcurso    StatusConcurso  @default(ABERTO)
+  ano               Int?
+  conteudoProgramatico String?      @db.Text
+  beneficios        String?         @db.Text
+  publicoAlvo       String?         @db.Text
+  faq               String?         @db.Text
+  imagemCapa        String?
+  imagemMockup      String?
+  imagemMockup2     String?
+  imagemMockup3     String?
+  imagemHeroBg      String?
+  linkCheckoutTicto String?
+  idProdutoTicto    String?
+  precoOriginal     Decimal?        @db.Decimal(10, 2)
+  precoExibido      Decimal?        @db.Decimal(10, 2)
+  status            StatusApostila  @default(RASCUNHO)
+  seoTitle          String?
+  seoDescription    String?
+  keywords          String?
+  canonicalUrl      String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  concursoId        String?
+  concurso          Concurso?       @relation(fields: [concursoId], references: [id])
+  opportunityId     String?
+
+  @@index([slug])
+  @@index([categoriaId])
+  @@index([bancaId])
+  @@index([orgaoId])
+  @@index([estado])
+  @@index([status])
+  @@index([nivel])
+}
+
+enum StatusApostila {
+  RASCUNHO
+  PUBLICADO
+  PAUSADO
+  PENDENTE_REVISAO
+}
+
+enum StatusConcurso {
+  ABERTO
+  EM_ANDAMENTO
+  ENCERRADO
+  PREVISTO
+  ANULADO
+}
+
+enum NivelEscolaridade {
+  FUNDAMENTAL
+  MEDIO
+  TECNICO
+  SUPERIOR
+}
+
+// ==================== CONCURSOS ====================
+
+model Concurso {
+  id              String          @id @default(cuid())
+  nome            String
+  slug            String          @unique
+  orgaoId         String?
+  orgao           Orgao?          @relation(fields: [orgaoId], references: [id])
+  bancaId         String?
+  banca           Banca?          @relation(fields: [bancaId], references: [id])
+  estado          String?
+  cidade          String?
+  cargos          String?         @db.Text
+  nivel           NivelEscolaridade?
+  area            String?
+  status          StatusConcurso  @default(ABERTO)
+  ano             Int?
+  linkReferencia  String?
+  observacoes     String?         @db.Text
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  apostilas       Apostila[]
+
+  @@index([slug])
+  @@index([orgaoId])
+  @@index([bancaId])
+  @@index([estado])
+}
+
+// ==================== CATEGORIAS ====================
+
+model Categoria {
+  id              String    @id @default(cuid())
+  nome            String
+  slug            String    @unique
+  descricao       String?   @db.Text
+  seoTitle        String?
+  seoDescription  String?
+  ativo           Boolean   @default(true)
+  ordem           Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  apostilas       Apostila[]
+
+  @@index([slug])
+}
+
+// ==================== BANCAS ====================
+
+model Banca {
+  id        String      @id @default(cuid())
+  nome      String      @unique
+  slug      String      @unique
+  createdAt DateTime    @default(now())
+  apostilas Apostila[]
+  concursos Concurso[]
+
+  @@index([slug])
+}
+
+// ==================== ORGAOS ====================
+
+model Orgao {
+  id        String      @id @default(cuid())
+  nome      String
+  slug      String      @unique
+  sigla     String?
+  esfera    Esfera?
+  estado    String?
+  createdAt DateTime    @default(now())
+  apostilas Apostila[]
+  concursos Concurso[]
+
+  @@index([slug])
+}
+
+enum Esfera {
+  FEDERAL
+  ESTADUAL
+  MUNICIPAL
+}
+
+// ==================== MONITORAMENTO ====================
+
+model SitemapSource {
+  id              String          @id @default(cuid())
+  nome            String
+  url             String          @unique
+  ativo           Boolean         @default(true)
+  intervaloHoras  Int             @default(24)
+  ultimaVerificacao DateTime?
+  ultimoStatus    String?
+  totalUrlsEncontradas Int        @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  urls            SitemapUrl[]
+  logs            MonitorLog[]
+
+  @@index([ativo])
+}
+
+model SitemapUrl {
+  id              String          @id @default(cuid())
+  sourceId        String
+  source          SitemapSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  url             String
+  lastmod         DateTime?
+  detectadoEm     DateTime        @default(now())
+  processado      Boolean         @default(false)
+  opportunityId   String?         @unique
+  opportunity     DetectedOpportunity? @relation(fields: [opportunityId], references: [id])
+
+  @@unique([sourceId, url])
+  @@index([sourceId])
+  @@index([processado])
+}
+
+model DetectedOpportunity {
+  id              String              @id @default(cuid())
+  sitemapUrl      SitemapUrl?
+  urlOriginal     String
+  nomeProvavel    String?
+  orgaoProvavel   String?
+  cargoProvavel   String?
+  categoriaProvavel String?
+  estadoProvavel  String?
+  status          OpportunityStatus   @default(NOVA)
+  notas           String?             @db.Text
+  apostilaId      String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([status])
+}
+
+enum OpportunityStatus {
+  NOVA
+  IGNORADA
+  CONVERTIDA
+  EM_ANALISE
+}
+
+model MonitorLog {
+  id          String        @id @default(cuid())
+  sourceId    String
+  source      SitemapSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  tipo        LogTipo
+  mensagem    String        @db.Text
+  detalhes    String?       @db.Text
+  createdAt   DateTime      @default(now())
+
+  @@index([sourceId])
+  @@index([createdAt])
+}
+
+enum LogTipo {
+  INFO
+  SUCESSO
+  ERRO
+  ALERTA
+}
+
+// ==================== NOTIFICACOES ====================
+
+model Notification {
+  id          String            @id @default(cuid())
+  userId      String?
+  user        User?             @relation(fields: [userId], references: [id])
+  tipo        NotificationType
+  titulo      String
+  mensagem    String            @db.Text
+  lida        Boolean           @default(false)
+  link        String?
+  createdAt   DateTime          @default(now())
+
+  @@index([userId])
+  @@index([lida])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  NOVA_URL
+  MUITAS_URLS
+  FONTE_FALHOU
+  SEM_LINK_TICTO
+  RASCUNHO_ANTIGO
+  OPORTUNIDADE_CONVERTIDA
+  SISTEMA
+}
+
+// ==================== TICTO ====================
+
+model TictoConfig {
+  id              String    @id @default(cuid())
+  apiKey          String?
+  webhookSecret   String?
+  urlBase         String?
+  ativo           Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model TictoWebhookLog {
+  id          String    @id @default(cuid())
+  evento      String
+  payload     String    @db.Text
+  status      String
+  ip          String?
+  createdAt   DateTime  @default(now())
+
+  @@index([createdAt])
+}
+
+// ==================== AUDITORIA ====================
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  acao        String
+  entidade    String
+  entidadeId  String?
+  detalhes    String?   @db.Text
+  ip          String?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([entidade])
+}
+
+// ==================== SITE CONFIG ====================
+
+model SiteConfig {
+  id                       String   @id @default("default")
+  metaPixelId              String?
+  googleAdsId              String?
+  googleAnalyticsId        String?
+  googleSearchConsoleId    String?
+  metaDomainVerification   String?
+  updatedAt                DateTime @updatedAt
+}
