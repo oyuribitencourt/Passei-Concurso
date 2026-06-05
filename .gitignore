@@ -34,10 +34,18 @@ yarn-error.log*
 # env files
 .env
 .env.local
+.env.production
+.env.production.local
 .env.development.local
 .env.test.local
-.env.production.local
+.env.vercel.production
 !.env.example
+!.env.vercel.example
+
+# backups and dumps
+.backups/
+*.dump
+*.sql
 
 # vercel
 .vercel
