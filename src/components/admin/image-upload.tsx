@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback } from "react"
+import { upload } from "@vercel/blob/client"
 import { Upload, X, Loader2, ImageIcon } from "lucide-react"
 
 interface ImageUploadProps {
@@ -29,22 +30,12 @@ export function ImageUpload({
       setUploading(true)
 
       try {
-        const formData = new FormData()
-        formData.append("file", file)
-        formData.append("folder", folder)
-
-        const res = await fetch("/api/admin/upload", {
-          method: "POST",
-          body: formData,
+        const blob = await upload(`${folder}/${file.name}`, file, {
+          access: "public",
+          handleUploadUrl: "/api/admin/upload",
         })
 
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}))
-          throw new Error(data.error || "Erro ao fazer upload")
-        }
-
-        const data = await res.json()
-        onChange(data.url)
+        onChange(blob.url)
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Erro ao fazer upload"
         setError(message)
