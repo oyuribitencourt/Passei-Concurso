@@ -6,10 +6,9 @@ export const runtime = "nodejs"
 export const maxDuration = 30
 
 export async function POST(request: Request) {
-  const user = await requireAdmin()
-  if (!user) return unauthorizedResponse()
-
   try {
+    const user = await requireAdmin()
+    if (!user) return unauthorizedResponse()
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return Response.json(
         { error: "BLOB_READ_WRITE_TOKEN não configurado no servidor" },
