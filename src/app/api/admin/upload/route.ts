@@ -2,11 +2,21 @@ import { requireAdmin, unauthorizedResponse } from "@/lib/auth-guard"
 import { put } from "@vercel/blob"
 import { randomUUID } from "crypto"
 
+export const runtime = "nodejs"
+export const maxDuration = 30
+
 export async function POST(request: Request) {
   const user = await requireAdmin()
   if (!user) return unauthorizedResponse()
 
   try {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return Response.json(
+        { error: "BLOB_READ_WRITE_TOKEN não configurado no servidor" },
+        { status: 500 }
+      )
+    }
+
     const formData = await request.formData()
     const file = formData.get("file") as File | null
     const folder = (formData.get("folder") as string) || "apostilas"
@@ -46,7 +56,7 @@ export async function POST(request: Request) {
     return Response.json({ url: blob.url, filename, size: file.size })
   } catch (error) {
     console.error("Erro no upload:", error)
-    const message = error instanceof Error ? error.message : "Erro ao fazer upload do arquivo"
+    const message = error instanceof Error ? error.message : String(error)
     return Response.json({ error: message }, { status: 500 })
   }
 }
