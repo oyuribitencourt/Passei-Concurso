@@ -9,6 +9,7 @@ export async function POST(request: Request) {
   try {
     const user = await requireAdmin()
     if (!user) return unauthorizedResponse()
+
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return Response.json(
         { error: "BLOB_READ_WRITE_TOKEN não configurado no servidor" },
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
     return Response.json({ url: blob.url, filename, size: file.size })
   } catch (error) {
     console.error("Erro no upload:", error)
-    const message = error instanceof Error ? error.message : String(error)
-    return Response.json({ error: message }, { status: 500 })
+    const message = error instanceof Error ? error.message : JSON.stringify(error)
+    return Response.json({ error: `[UPLOAD_V2] ${message}` }, { status: 500 })
   }
 }
