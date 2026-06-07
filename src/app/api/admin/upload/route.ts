@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
             "image/gif",
           ],
           maximumSizeInBytes: 5 * 1024 * 1024,
+          addRandomSuffix: true,
         }
       },
       onUploadCompleted: async () => {},
