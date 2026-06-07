@@ -1,6 +1,5 @@
 import { requireAdmin, unauthorizedResponse } from "@/lib/auth-guard"
-import { writeFile, mkdir } from "fs/promises"
-import path from "path"
+import { put } from "@vercel/blob"
 import { randomUUID } from "crypto"
 
 export async function POST(request: Request) {
@@ -36,23 +35,18 @@ export async function POST(request: Request) {
 
     // Generate unique filename
     const ext = file.name.split(".").pop()?.toLowerCase() || "png"
-    const filename = `${randomUUID()}.${ext}`
+    const filename = `${folder}/${randomUUID()}.${ext}`
 
-    // Ensure upload directory exists
-    const uploadDir = path.join(process.cwd(), "public", "uploads", folder)
-    await mkdir(uploadDir, { recursive: true })
+    // Upload to Vercel Blob
+    const blob = await put(filename, file, {
+      access: "public",
+      addRandomSuffix: false,
+    })
 
-    // Write file
-    const buffer = Buffer.from(await file.arrayBuffer())
-    const filePath = path.join(uploadDir, filename)
-    await writeFile(filePath, buffer)
-
-    // Return public URL
-    const url = `/uploads/${folder}/${filename}`
-
-    return Response.json({ url, filename, size: file.size })
+    return Response.json({ url: blob.url, filename, size: file.size })
   } catch (error) {
     console.error("Erro no upload:", error)
-    return Response.json({ error: "Erro ao fazer upload do arquivo" }, { status: 500 })
+    const message = error instanceof Error ? error.message : "Erro ao fazer upload do arquivo"
+    return Response.json({ error: message }, { status: 500 })
   }
 }
